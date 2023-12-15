@@ -7,11 +7,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".global", ".global", "{4853
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		Directory.Build.props = Directory.Build.props
+		NGherkin.props = NGherkin.props
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGherkinAdapter", "NGherkinAdapter\NGherkinAdapter.csproj", "{C5C138AF-8618-44F4-B716-2D8C034940F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NGherkin", "NGherkin\NGherkin.csproj", "{A54B0A47-469B-4EB6-9391-9031A9D30EF6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGherkin", "NGherkin\NGherkin.csproj", "{A54B0A47-469B-4EB6-9391-9031A9D30EF6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NGherkin.Tests", "NGherkin.Tests\NGherkin.Tests.csproj", "{79603402-EC1D-4620-BE68-50A41099C3AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGherkin.TestAdapter", "NGherkin.TestAdapter\NGherkin.TestAdapter.csproj", "{A44C41DA-396D-4653-8FE1-7C6205A961CA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +22,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C5C138AF-8618-44F4-B716-2D8C034940F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C5C138AF-8618-44F4-B716-2D8C034940F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C5C138AF-8618-44F4-B716-2D8C034940F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C5C138AF-8618-44F4-B716-2D8C034940F6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A54B0A47-469B-4EB6-9391-9031A9D30EF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A54B0A47-469B-4EB6-9391-9031A9D30EF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A54B0A47-469B-4EB6-9391-9031A9D30EF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A54B0A47-469B-4EB6-9391-9031A9D30EF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79603402-EC1D-4620-BE68-50A41099C3AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79603402-EC1D-4620-BE68-50A41099C3AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79603402-EC1D-4620-BE68-50A41099C3AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79603402-EC1D-4620-BE68-50A41099C3AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A44C41DA-396D-4653-8FE1-7C6205A961CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A44C41DA-396D-4653-8FE1-7C6205A961CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A44C41DA-396D-4653-8FE1-7C6205A961CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A44C41DA-396D-4653-8FE1-7C6205A961CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

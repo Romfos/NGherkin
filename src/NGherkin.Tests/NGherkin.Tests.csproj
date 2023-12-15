@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../NGherkin.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net462</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NGherkin\NGherkin.csproj" />
+    <ProjectReference Include="..\NGherkin.TestAdapter\NGherkin.TestAdapter.csproj" />
+  </ItemGroup>
+
+</Project>

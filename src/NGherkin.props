@@ -1,0 +1,13 @@
+<Project>
+  
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="**\*.feature" />
+    <EmbeddedResource Remove="bin\**\*.feature" />
+    <EmbeddedResource Remove="obj\**\*.feature" />
+  </ItemGroup>
+
+</Project>
