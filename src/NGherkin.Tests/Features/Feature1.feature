@@ -7,4 +7,5 @@ Scenario: this is scenario
     | Name | Value   |
     | Data | Contnet |
     When this is second when step with date '01/01/2020' argument
+    When this is when step with async task
 	Then this is then step

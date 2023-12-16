@@ -39,6 +39,12 @@ internal sealed class StepClass
         }
     }
 
+    [When("this is when step with async task")]
+    public async Task When3()
+    {
+        await Task.Yield();
+    }
+
     [Then("this is then step")]
     public void Then()
     {

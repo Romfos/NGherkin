@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using NGherkin.Registrations;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace NGherkin.TestAdapter;
@@ -51,6 +53,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
 
     private void RunTest(TestCase testCase, IFrameworkHandle frameworkHandle)
     {
+        var startTime = DateTime.Now;
         frameworkHandle.RecordStart(testCase);
         var testResult = new TestResult(testCase);
 
@@ -70,12 +73,14 @@ public sealed class NGherkinTestExecutor : ITestExecutor
 
             foreach (var stepExecutionContext in stepExecutionContexts)
             {
-                stepExecutionContext.MethodInfo.Invoke(stepExecutionContext.Target, stepExecutionContext.Arguments);
+                var result = stepExecutionContext.MethodInfo.Invoke(stepExecutionContext.Target, stepExecutionContext.Arguments);
+                AwaitIfRequired(result);
             }
         }
         catch (Exception exception)
         {
             testResult.Outcome = TestOutcome.Failed;
+            testResult.Duration = DateTime.Now - startTime;
             testResult.ErrorMessage = exception.ToString();
             testResult.ErrorStackTrace = exception.StackTrace;
             frameworkHandle.RecordResult(testResult);
@@ -84,8 +89,21 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         }
 
         testResult.Outcome = TestOutcome.Passed;
+        testResult.Duration = DateTime.Now - startTime;
         frameworkHandle.RecordResult(testResult);
         frameworkHandle.RecordEnd(testResult.TestCase, testResult.Outcome);
+    }
+
+    private void AwaitIfRequired(object? result)
+    {
+        if (result?.GetType().GetMethod(nameof(Task.GetAwaiter)) is MethodInfo getAwaiter)
+        {
+            var awaiter = getAwaiter.Invoke(result, null);
+            if (awaiter?.GetType().GetMethod(nameof(TaskAwaiter.GetResult)) is MethodInfo getResult)
+            {
+                getResult.Invoke(awaiter, null);
+            }
+        }
     }
 
     private StepExecutionContext GetStepExecutionContext(
@@ -135,7 +153,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         var arguments = stepTextArguments.Select((value, index) => Convert.ChangeType(value, parameters[index].ParameterType));
         if (step.Argument is DataTable dataTable)
         {
-            arguments = arguments.Concat(new[] { dataTable });
+            arguments = arguments.Concat([dataTable]);
         }
 
         try
