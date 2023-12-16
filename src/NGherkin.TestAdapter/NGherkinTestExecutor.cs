@@ -80,7 +80,8 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         catch (Exception exception)
         {
             testResult.Outcome = TestOutcome.Failed;
-            testResult.Duration = DateTime.Now - startTime;
+            testResult.EndTime = DateTime.Now;
+            testResult.Duration = testResult.EndTime - startTime;
             testResult.ErrorMessage = exception.ToString();
             testResult.ErrorStackTrace = exception.StackTrace;
             frameworkHandle.RecordResult(testResult);
@@ -89,7 +90,8 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         }
 
         testResult.Outcome = TestOutcome.Passed;
-        testResult.Duration = DateTime.Now - startTime;
+        testResult.EndTime = DateTime.Now;
+        testResult.Duration = testResult.EndTime - startTime;
         frameworkHandle.RecordResult(testResult);
         frameworkHandle.RecordEnd(testResult.TestCase, testResult.Outcome);
     }
