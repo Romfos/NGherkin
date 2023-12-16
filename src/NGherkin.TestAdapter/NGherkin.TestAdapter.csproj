@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="../Package.props" />
 
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="17.8.0" PrivateAssets="all" />
   </ItemGroup>
@@ -8,5 +12,17 @@
   <ItemGroup>
     <ProjectReference Include="..\NGherkin\NGherkin.csproj" />
   </ItemGroup>
+
+  <Target Name="CopyProjectReferencesToPackage" AfterTargets="ResolveReferences" Condition="'$(TargetFramework)' == 'net462'">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_PackLocalLockFileAssemblies" AfterTargets="ResolveLockFileCopyLocalFiles" Condition="'$(TargetFramework)' == 'net462'">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths)" TargetPath="%(ReferenceCopyLocalPaths.DestinationSubDirectory)%(ReferenceCopyLocalPaths.Filename)%(ReferenceCopyLocalPaths.Extension)" />
+    </ItemGroup>
+  </Target>
 
 </Project>
