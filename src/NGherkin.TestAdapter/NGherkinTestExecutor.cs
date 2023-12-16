@@ -62,9 +62,11 @@ public sealed class NGherkinTestExecutor : ITestExecutor
 
         foreach (var step in testCaseExecutionContext.Scenario.Steps)
         {
-            var potentialGherkinStepRegistrations = gherkinStepRegistrations.Where(x => x.Keyword == step.Keyword.Trim() && x.Pattern.IsMatch(step.Text)).ToList();
+            var matchedGherkinStepRegistrations = gherkinStepRegistrations
+                .Where(x => x.Keyword == step.Keyword.Trim() && x.Pattern.IsMatch(step.Text))
+                .ToList();
 
-            if (potentialGherkinStepRegistrations.Count == 0)
+            if (matchedGherkinStepRegistrations.Count == 0)
             {
                 testResult.Outcome = TestOutcome.Failed;
                 testResult.ErrorMessage = $"Unable to find step for: {step.Keyword.Trim()} {step.Text}";
@@ -73,7 +75,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
                 return;
             }
 
-            if (potentialGherkinStepRegistrations.Count > 1)
+            if (matchedGherkinStepRegistrations.Count > 1)
             {
                 testResult.Outcome = TestOutcome.Failed;
                 testResult.ErrorMessage = $"Multiple steps were found for: {step.Keyword.Trim()} {step.Text}";
@@ -82,7 +84,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
                 return;
             }
 
-            var gherkinStepRegistration = potentialGherkinStepRegistrations.Single();
+            var gherkinStepRegistration = matchedGherkinStepRegistrations.Single();
             var targetType = scope.ServiceProvider.GetRequiredService(gherkinStepRegistration.Type);
 
             try
