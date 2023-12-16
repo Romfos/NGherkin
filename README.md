@@ -58,7 +58,6 @@ internal sealed class StepClass
     [Given("given1")]
     public void Given()
     {
-
     }
 
     [When("when1")]
