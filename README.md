@@ -18,7 +18,7 @@ Modern Gherkin framework for .NET ecosystem for different types of tests
 - Should be a good choice for the next years.
 
 # Requirements
-- NET 6+ (recommended) or .NET Framework 4.6.2+ (only .NET sdk projects types)
+- NET 6+ (recommended) or .NET Framework 4.6.2+
 - Visual Studio 2022 or Visual Studio Code
 
 Optional: gherking syntax plugin for your code editor:
@@ -30,7 +30,7 @@ Optional: gherking syntax plugin for your code editor:
 - https://www.nuget.org/packages/NGherkin.TestAdapter
 
 # How to use
-1) Create new class library for .NET 6+ (or SDK project for .NET Framework 4.6.2+)
+1) Create new class library for .NET 6+ or .NET Framework 4.6.2+
 2) Add following nuget packages:
 - https://www.nuget.org/packages/NGherkin
 - https://www.nuget.org/packages/NGherkin.TestAdapter
