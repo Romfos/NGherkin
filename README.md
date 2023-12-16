@@ -64,20 +64,6 @@ internal sealed class StepClass
     [When("this is when step with '(.*)' argument an '(.*)' argument")]
     public void When1(int arg1, string arg2, DataTable dataTable)
     {
-        if (arg1 is not 1)
-        {
-            throw new ArgumentException(nameof(arg1));
-        }
-
-        if (arg2 is not "text")
-        {
-            throw new ArgumentException(nameof(arg2));
-        }
-
-        if (dataTable is null)
-        {
-            throw new ArgumentException(nameof(dataTable));
-        }
     }
 
     [Then("then1")]
