@@ -20,11 +20,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Restore
-        run: dotnet restore ./src/NGherkin.sln
-
       - name: Build
-        run: dotnet build --no-restore ./src/NGherkin.sln
+        run: dotnet build ./src/NGherkin.sln
 
       - name: Test
-        run: dotnet test --no-build --no-restore ./src/NGherkin.sln
+        run: dotnet test --no-build --no-restore --framework ${{ matrix.framework }}  ./src/NGherkin.sln
