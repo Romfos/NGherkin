@@ -29,7 +29,7 @@ Optional: gherking syntax plugin for your code editor:
 - https://www.nuget.org/packages/NGherkin.TestAdapter
 
 # How to use
-1) Create new class library for .NET 6+ (or SDK project fo .NET Framework 4.6.2+)
+1) Create new class library for .NET 6+ (or SDK project for .NET Framework 4.6.2+)
 2) Add following nuget packages:
 - https://www.nuget.org/packages/NGherkin
 - https://www.nuget.org/packages/NGherkin.TestAdapter
