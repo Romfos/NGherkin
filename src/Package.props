@@ -1,0 +1,21 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net462</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Romfos</Authors>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Description>Modern Gherkin framework for .NET ecosystem for different types of tests</Description>
+    <PackageTags>Gherkin BDD Tests AutoTests</PackageTags>
+    <RepositoryUrl>https://github.com/Romfos/NGherkin</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\">
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+</Project>
