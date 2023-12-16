@@ -1,7 +1,7 @@
 on: push
 
 jobs:
-  ubuntu-tests:
+  build:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macOS-latest]
