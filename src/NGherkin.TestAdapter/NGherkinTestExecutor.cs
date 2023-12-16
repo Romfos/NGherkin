@@ -62,11 +62,11 @@ public sealed class NGherkinTestExecutor : ITestExecutor
             throw new Exception("Unable to get test case data");
         }
 
-        using var scope = testCaseExecutionContext.Services.CreateScope();
-        var gherkinStepRegistrations = scope.ServiceProvider.GetServices<GherkinStepRegistration>();
-
         try
         {
+            using var scope = testCaseExecutionContext.Services.CreateScope();
+            var gherkinStepRegistrations = scope.ServiceProvider.GetServices<GherkinStepRegistration>();
+
             var stepExecutionContexts = testCaseExecutionContext.Scenario.Steps
                 .Select(step => GetStepExecutionContext(step, scope.ServiceProvider, gherkinStepRegistrations))
                 .ToList();
