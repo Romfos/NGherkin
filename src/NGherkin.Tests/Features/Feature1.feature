@@ -1,7 +1,10 @@
-Feature: Feature2
+Feature: Feature1
 
 @tag1
-Scenario: test2
-	Given given1
-	When when1
-	Then then1
+Scenario: this is scenario
+	Given this is given step
+	When this is when step with '1' argument an 'text' argument
+    | Name | Value   |
+    | Data | Contnet |
+    When this is second when step with date '01/01/2020' argument
+	Then this is then step

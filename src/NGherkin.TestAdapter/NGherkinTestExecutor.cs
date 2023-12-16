@@ -1,7 +1,9 @@
+using Gherkin.Ast;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using NGherkin.Registrations;
+using System.Text.RegularExpressions;
 
 namespace NGherkin.TestAdapter;
 
@@ -85,17 +87,40 @@ public sealed class NGherkinTestExecutor : ITestExecutor
             }
 
             var gherkinStepRegistration = matchedGherkinStepRegistrations.Single();
-            var targetType = scope.ServiceProvider.GetRequiredService(gherkinStepRegistration.Type);
-
             try
             {
-                gherkinStepRegistration.Method.Invoke(targetType, null);
+                var targetType = scope.ServiceProvider.GetRequiredService(gherkinStepRegistration.Type);
+
+                var parameters = gherkinStepRegistration.Method.GetParameters();
+
+                var stepArguments = gherkinStepRegistration.Pattern
+                    .Match(step.Text)
+                    .Groups
+                    .Cast<Group>()
+                    .Skip(1)
+                    .Select(x => x.Value)
+                    .ToList();
+
+                var expectedParameterCount = step.Argument == null ? stepArguments.Count : stepArguments.Count + 1;
+                if (expectedParameterCount != parameters.Length)
+                {
+                    throw new Exception($"Method {gherkinStepRegistration.Type.FullName}.{gherkinStepRegistration.Method.Name} have invalid parameters count");
+                }
+
+                var arguments = stepArguments.Select((value, index) => Convert.ChangeType(value, parameters[index].ParameterType));
+
+                if (step.Argument is DataTable dataTable)
+                {
+                    arguments = arguments.Concat(new[] { dataTable });
+                }
+
+                gherkinStepRegistration.Method.Invoke(targetType, arguments.ToArray());
             }
             catch (Exception exception)
             {
                 testResult.Outcome = TestOutcome.Failed;
-                testResult.ErrorMessage = exception.InnerException!.Message;
-                testResult.ErrorStackTrace = exception.InnerException!.StackTrace;
+                testResult.ErrorMessage = exception.InnerException?.Message ?? exception.Message;
+                testResult.ErrorStackTrace = exception.InnerException?.StackTrace ?? exception.StackTrace;
                 frameworkHandle.RecordResult(testResult);
                 frameworkHandle.RecordEnd(testResult.TestCase, testResult.Outcome);
                 return;
