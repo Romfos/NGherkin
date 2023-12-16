@@ -19,7 +19,7 @@ Modern Gherkin framework for .NET ecosystem for different types of tests
 
 # Requirements
 - NET 6+ (recommended) or .NET Framework 4.6.2+
-- Visual Studio 2022 or Visual Studio Code
+- Visual Studio 2022 or Visual Studio Code or any other editor with .NET support
 
 Optional: gherking syntax plugin for your code editor:
 1) Specflow for Visual Studio 2022,
