@@ -13,8 +13,8 @@ Modern Gherkin framework for .NET ecosystem for different types of tests
 - Should be good and fast for modern .NET ecossystem. Depricated framework versions or legacy visual studio versions support is out of scope.
 - Should support moderm .NET features like nullable referene types, e.t.c
 - Editor plugins for editors should be optional. (maybe only syntax hightliting for gherkin, if needed)
-- No code generation, no dependecies on other test runners and as the result - no compatibility problems with it
-- Should be good choice for the next years.
+- No dependecies on other test runners\frameworks and as the result => no compatibility problems with it
+- Should be a good choice for the next years.
 
 # Requirements
 - NET 6+ (recommended) or .NET Framework 4.6.2+ (only .NET sdk projects types)
