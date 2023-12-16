@@ -8,13 +8,20 @@ Modern Gherkin framework for .NET ecosystem for different types of tests
 [![NGherkin.TestAdapter](https://img.shields.io/nuget/v/NGherkin.TestAdapter?label=NGherkin.TestAdapter)](https://www.nuget.org/packages/NGherkin.TestAdapter)
 
 # Philosophy
-- Do not reinvent the wheel and use familiar for every .NET Developer conceptions like startup, di container, e.t.c
+- Do not reinvent the wheel and use familiar for every .NET Developer conceptions like:
+  - ASP.NET Core like Startup,
+  - Microsoft.Extensions.DependencyInjection is a core
+  - System.Text.Json\
+  e.t.c
 - Good integrated with modern .NET ecossystem.
 - Editor plugins for editors should be optional. (maybe only syntax hightliting for gherkin, if needed)
 - Minimalistic. Not a monster-framework with tons of custom conceptions.
-- No need to support depricated framework versions or old visual studio's
 - Support moderm .NET features like nullable referene types e.t.c
 - No dependecies on other test runners\test frameworks
+
+### What is NOT a goal
+- Support deprecated framework versions
+- Supprot old visual studio versions
 
 # Requirements
 - NET 6+ (recommended) or .NET Framework 4.6.2+
