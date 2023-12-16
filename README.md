@@ -9,14 +9,14 @@ Modern Gherkin framework for .NET ecosystem for different types of tests
 
 # Philosophy
 - Should do 1 thing. Not an monster-framework with tons of custom conseptions.
-- Should use familiar conceptions for every .NET Developer like:
+- Should be good and fast for modern .NET ecossystem.\
+  Depricated framework versions or legacy visual studio versions support is out of scope.
+- Should support moderm .NET features like nullable referene types, e.t.c
+- Do not reinvent the wheel and use familiar conceptions for every .NET Developer like:
   - Startup file
   - Microsoft.Extensions.DependencyInjection
   - System.Text.Json\
   e.t.c
-- Should be good and fast for modern .NET ecossystem.\
-Depricated framework versions or legacy visual studio versions support is out of scope.
-- Should support moderm .NET features like nullable referene types, e.t.c
 - Editor plugins for editors should be optional. (maybe only syntax hightliting for gherkin, if needed)
 - No dependecies on other test runners\frameworks and as the result
 - Should be a good choice for the next years.
