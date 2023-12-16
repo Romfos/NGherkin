@@ -1,0 +1,30 @@
+on: push
+
+jobs:
+  ubuntu-tests:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macOS-latest]
+        framework: [net6.0, net7.0, net8.0]
+        include:
+          - os: windows-latest
+            framework: net462
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Restore
+        run: dotnet restore ./src/NGherkin.sln
+
+      - name: Build
+        run: dotnet build --no-restore ./src/NGherkin.sln
+
+      - name: Test
+        run: dotnet test --no-build --no-restore ./src/NGherkin.sln
