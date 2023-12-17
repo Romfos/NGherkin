@@ -138,7 +138,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         {
             backgroundStepKeyword = GetRealKeyword(step, backgroundStepKeyword);
             var stepText = step.Text;
-            yield return GetStepExecutionContext(serviceProvider, gherkinStepRegistrations, step, backgroundStepKeyword, stepText);
+            yield return GetStepExecutionContext(serviceProvider, gherkinStepRegistrations, backgroundStepKeyword, stepText, step.Argument);
         }
 
         var keyword = "Given";
@@ -146,16 +146,16 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         {
             keyword = GetRealKeyword(step, keyword);
             var stepText = GetRealStepText(step, testExecutionContext);
-            yield return GetStepExecutionContext(serviceProvider, gherkinStepRegistrations, step, keyword, stepText);
+            yield return GetStepExecutionContext(serviceProvider, gherkinStepRegistrations, keyword, stepText, step.Argument);
         }
     }
 
     private StepExecutionContext GetStepExecutionContext(
         IServiceProvider serviceProvider,
         IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
-        Step step,
         string keyword,
-        string stepText)
+        string stepText,
+        StepArgument stepArgument)
     {
         var errorMessageStepText = $"{keyword} {stepText}";
 
@@ -185,19 +185,21 @@ public sealed class NGherkinTestExecutor : ITestExecutor
             .Select(x => x.Value)
             .ToList();
 
-        var expectedParametersCount = step.Argument != null ? parameters.Count + 1 : parameters.Count;
+        var expectedParametersCount = stepArgument != null ? parameters.Count + 1 : parameters.Count;
 
         if (matchedGherkinStepRegistration.Method.GetParameters().Length != expectedParametersCount)
         {
             throw new Exception($"Invalid parameter count for {matchedGherkinStepRegistration.ServiceType.FullName}.{matchedGherkinStepRegistration.Method}");
         }
 
-        return new StepExecutionContext(
+        var stepExecutionContext = new StepExecutionContext(
             errorMessageStepText,
             service,
             matchedGherkinStepRegistration.Method,
             parameters,
-            step.Argument);
+            stepArgument);
+
+        return stepExecutionContext;
     }
 
     private void RunTestStep(StepExecutionContext stepExecutionContext)
