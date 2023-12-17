@@ -130,7 +130,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                                 LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body), ruleBackgroundSteps)
                             };
 
-                            testCase.Traits.AddRange(feature.Tags.Concat(scenario.Tags).Select(x => new Trait(x.Name, string.Empty)));
+                            testCase.Traits.AddRange(feature.Tags.Concat(rule.Tags).Concat(scenario.Tags).Select(x => new Trait(x.Name, string.Empty)));
 
                             yield return testCase;
                         }
