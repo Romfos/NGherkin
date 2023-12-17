@@ -89,7 +89,54 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
         {
             var feature = gherkinDocumentRegistration.Document.Feature;
 
-            var backgroundSteps = GetBackgroundSteps(feature);
+            var featureBackgroundSteps = GetFeatureBackgroundSteps(feature);
+
+            foreach (var rule in feature.Children.OfType<Rule>())
+            {
+                var ruleBackgroundSteps = featureBackgroundSteps.Concat(GetRuleBackgroundSteps(rule)).ToList();
+
+                foreach (var scenario in rule.Children.OfType<Scenario>().Where(x => !x.Examples.Any()))
+                {
+                    var testCase = new TestCase()
+                    {
+                        DisplayName = scenario.Name,
+                        FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{rule.Name}.{scenario.Name}",
+                        ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
+                        Source = source,
+                        LocalExtensionData = new TestExecutionContext(feature, scenario, null, ruleBackgroundSteps)
+                    };
+
+                    testCase.Traits.AddRange(feature.Tags.Concat(scenario.Tags).Select(x => new Trait(x.Name, string.Empty)));
+
+                    yield return testCase;
+                }
+
+                foreach (var scenario in rule.Children.OfType<Scenario>().Where(x => x.Examples.Any()))
+                {
+                    var scenarioCaseNumber = 1;
+
+                    foreach (var example in scenario.Examples)
+                    {
+                        foreach (var body in example.TableBody)
+                        {
+                            var testName = $"{scenario.Name}: Example #{scenarioCaseNumber++}";
+
+                            var testCase = new TestCase()
+                            {
+                                DisplayName = testName,
+                                FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{rule.Name}.{testName}",
+                                ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
+                                Source = source,
+                                LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body), ruleBackgroundSteps)
+                            };
+
+                            testCase.Traits.AddRange(feature.Tags.Concat(scenario.Tags).Select(x => new Trait(x.Name, string.Empty)));
+
+                            yield return testCase;
+                        }
+                    }
+                }
+            }
 
             foreach (var scenario in feature.Children.OfType<Scenario>().Where(x => !x.Examples.Any()))
             {
@@ -99,7 +146,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                     FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
                     ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                     Source = source,
-                    LocalExtensionData = new TestExecutionContext(feature, scenario, null, backgroundSteps)
+                    LocalExtensionData = new TestExecutionContext(feature, scenario, null, featureBackgroundSteps)
                 };
 
                 testCase.Traits.AddRange(feature.Tags.Concat(scenario.Tags).Select(x => new Trait(x.Name, string.Empty)));
@@ -123,7 +170,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                             FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{testName}",
                             ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                             Source = source,
-                            LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body), backgroundSteps)
+                            LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body), featureBackgroundSteps)
                         };
 
                         testCase.Traits.AddRange(feature.Tags.Concat(scenario.Tags).Select(x => new Trait(x.Name, string.Empty)));
@@ -164,14 +211,25 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
         }
     }
 
-    private static List<Step> GetBackgroundSteps(Feature feature)
+    private static List<Step> GetFeatureBackgroundSteps(Feature feature)
     {
         var backgrounds = feature.Children.OfType<Background>().ToList();
         if (backgrounds.Count > 1)
         {
-            throw new Exception("Multiple backgrounds are not supported");
+            throw new Exception("Multiple backgrounds are not supported for feature");
         }
 
         return backgrounds.SelectMany(x => x.Steps).ToList();
+    }
+
+    private static IEnumerable<Step> GetRuleBackgroundSteps(Rule rule)
+    {
+        var backgrounds = rule.Children.OfType<Background>().ToList();
+        if (backgrounds.Count > 1)
+        {
+            throw new Exception("Multiple backgrounds are not supported for rule");
+        }
+
+        return backgrounds.SelectMany(x => x.Steps);
     }
 }

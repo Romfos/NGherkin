@@ -6,13 +6,18 @@ namespace NGherkin.Tests.Steps;
 [Steps]
 internal sealed class StepClass
 {
-    [Given("this is given step$")]
+    [Given("this is given step")]
     public void Given1()
     {
     }
 
-    [Given("this is given step from background")]
+    [Given("this is feature level background step")]
     public void Given2()
+    {
+    }
+
+    [Given("this is rule level background step")]
+    public void Given3()
     {
     }
 
