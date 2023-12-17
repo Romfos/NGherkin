@@ -11,7 +11,7 @@ public static class ServiceCollectionExtensions
 {
     public static void AddGherkinFeatures(this IServiceCollection services)
     {
-        var assembly = Assembly.GetCallingAssembly() ?? throw new Exception("Unable to get entry assembly");
+        var assembly = Assembly.GetCallingAssembly() ?? throw new Exception("Unable to get calling assembly");
         var gherkinParser = new Parser();
 
         GherkinDocumentRegistration CreateGherkinDocumentRegistration(Assembly assembly, string resourceName)
@@ -33,7 +33,7 @@ public static class ServiceCollectionExtensions
 
     public static void AddGherkinSteps(this IServiceCollection services)
     {
-        var assembly = Assembly.GetCallingAssembly() ?? throw new Exception("Unable to get entry assembly");
+        var assembly = Assembly.GetCallingAssembly() ?? throw new Exception("Unable to get calling assembly");
         var stepTypes = assembly.GetTypes().Where(x => x.GetCustomAttribute<StepsAttribute>() != null);
 
         foreach (var stepType in stepTypes)
