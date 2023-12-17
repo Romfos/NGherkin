@@ -133,53 +133,71 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
         TestExecutionContext testExecutionContext)
     {
-        var keyword = "Given";
+        var backgroundStepKeyword = "Given";
+        foreach (var step in testExecutionContext.BackgroundSteps)
+        {
+            backgroundStepKeyword = GetRealKeyword(step, backgroundStepKeyword);
+            var stepText = step.Text;
+            yield return GetStepExecutionContext(serviceProvider, gherkinStepRegistrations, step, backgroundStepKeyword, stepText);
+        }
 
+        var keyword = "Given";
         foreach (var step in testExecutionContext.Scenario.Steps)
         {
-            var stepText = GetRealStepTextAndKeyword(step, testExecutionContext, ref keyword);
-            var errorMessageStepText = $"{keyword} {stepText}";
-
-            var matchedGherkinStepRegistrations = gherkinStepRegistrations
-                .Where(x => x.Keyword == keyword && x.Pattern.IsMatch(stepText))
-                .ToList();
-
-            if (matchedGherkinStepRegistrations.Count == 0)
-            {
-                throw new Exception($"Unable to find step implementation for: {errorMessageStepText}");
-            }
-
-            if (matchedGherkinStepRegistrations.Count > 1)
-            {
-                throw new Exception($"Multiple step implementations were found for: {errorMessageStepText}");
-            }
-
-            var matchedGherkinStepRegistration = matchedGherkinStepRegistrations.Single();
-
-            var service = serviceProvider.GetRequiredService(matchedGherkinStepRegistration.ServiceType);
-
-            var parameters = matchedGherkinStepRegistration.Pattern
-                .Match(stepText)
-                .Groups
-                .Cast<Group>()
-                .Skip(1)
-                .Select(x => x.Value)
-                .ToList();
-
-            var expectedParametersCount = step.Argument != null ? parameters.Count + 1 : parameters.Count;
-
-            if (matchedGherkinStepRegistration.Method.GetParameters().Length != expectedParametersCount)
-            {
-                throw new Exception($"Invalid parameter count for {matchedGherkinStepRegistration.ServiceType.FullName}.{matchedGherkinStepRegistration.Method}");
-            }
-
-            yield return new StepExecutionContext(
-                errorMessageStepText,
-                service,
-                matchedGherkinStepRegistration.Method,
-                parameters,
-                step.Argument);
+            keyword = GetRealKeyword(step, keyword);
+            var stepText = GetRealStepText(step, testExecutionContext);
+            yield return GetStepExecutionContext(serviceProvider, gherkinStepRegistrations, step, keyword, stepText);
         }
+    }
+
+    private StepExecutionContext GetStepExecutionContext(
+        IServiceProvider serviceProvider,
+        IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
+        Step step,
+        string keyword,
+        string stepText)
+    {
+        var errorMessageStepText = $"{keyword} {stepText}";
+
+        var matchedGherkinStepRegistrations = gherkinStepRegistrations
+            .Where(x => x.Keyword == keyword && x.Pattern.IsMatch(stepText))
+            .ToList();
+
+        if (matchedGherkinStepRegistrations.Count == 0)
+        {
+            throw new Exception($"Unable to find step implementation for: {errorMessageStepText}");
+        }
+
+        if (matchedGherkinStepRegistrations.Count > 1)
+        {
+            throw new Exception($"Multiple step implementations were found for: {errorMessageStepText}");
+        }
+
+        var matchedGherkinStepRegistration = matchedGherkinStepRegistrations.Single();
+
+        var service = serviceProvider.GetRequiredService(matchedGherkinStepRegistration.ServiceType);
+
+        var parameters = matchedGherkinStepRegistration.Pattern
+            .Match(stepText)
+            .Groups
+            .Cast<Group>()
+            .Skip(1)
+            .Select(x => x.Value)
+            .ToList();
+
+        var expectedParametersCount = step.Argument != null ? parameters.Count + 1 : parameters.Count;
+
+        if (matchedGherkinStepRegistration.Method.GetParameters().Length != expectedParametersCount)
+        {
+            throw new Exception($"Invalid parameter count for {matchedGherkinStepRegistration.ServiceType.FullName}.{matchedGherkinStepRegistration.Method}");
+        }
+
+        return new StepExecutionContext(
+            errorMessageStepText,
+            service,
+            matchedGherkinStepRegistration.Method,
+            parameters,
+            step.Argument);
     }
 
     private void RunTestStep(StepExecutionContext stepExecutionContext)
@@ -197,13 +215,14 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         }
     }
 
-    private string GetRealStepTextAndKeyword(Step step, TestExecutionContext testExecutionContext, ref string keyword)
+    private string GetRealKeyword(Step step, string previousKeyword)
     {
         var stepKeyword = step.Keyword.Trim();
-        if (stepKeyword != "And")
-        {
-            keyword = stepKeyword;
-        }
+        return stepKeyword == "And" ? previousKeyword : stepKeyword;
+    }
+
+    private string GetRealStepText(Step step, TestExecutionContext testExecutionContext)
+    {
         var stepText = step.Text;
 
         if (testExecutionContext.Examples != null)

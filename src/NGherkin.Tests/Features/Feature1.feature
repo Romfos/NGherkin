@@ -1,5 +1,8 @@
 Feature: Feature1
 
+Background:
+    Given this is given step from background
+
 @tag1
 Scenario: this is scenario
 	Given this is given step

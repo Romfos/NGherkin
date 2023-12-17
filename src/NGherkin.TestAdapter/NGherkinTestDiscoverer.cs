@@ -88,6 +88,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
         foreach (var gherkinDocumentRegistration in serviceProvider.GetServices<GherkinDocumentRegistration>())
         {
             var feature = gherkinDocumentRegistration.Document.Feature;
+            var backgroundSteps = feature.Children.OfType<Background>().SelectMany(x => x.Steps).ToList();
 
             foreach (var scenario in feature.Children.OfType<Scenario>())
             {
@@ -99,7 +100,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                         FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
                         ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                         Source = source,
-                        LocalExtensionData = new TestExecutionContext(feature, scenario, null)
+                        LocalExtensionData = new TestExecutionContext(feature, scenario, null, backgroundSteps)
                     };
                 }
 
@@ -116,7 +117,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                             FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{testName}",
                             ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                             Source = source,
-                            LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body))
+                            LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body), backgroundSteps)
                         };
                     }
                 }
