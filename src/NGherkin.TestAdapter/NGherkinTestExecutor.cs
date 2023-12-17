@@ -132,9 +132,15 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
         TestExecutionContext testExecutionContext)
     {
+        var keyword = "Given";
+
         foreach (var step in testExecutionContext.Scenario.Steps)
         {
-            var keyword = step.Keyword.Trim();
+            var stepKeyword = step.Keyword.Trim();
+            if (stepKeyword != "And")
+            {
+                keyword = stepKeyword;
+            }
             var fullStepText = $"{keyword} {step.Text}";
 
             var matchedGherkinStepRegistrations = gherkinStepRegistrations
