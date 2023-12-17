@@ -88,28 +88,30 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
         foreach (var gherkinDocumentRegistration in serviceProvider.GetServices<GherkinDocumentRegistration>())
         {
             var feature = gherkinDocumentRegistration.Document.Feature;
-            var backgroundSteps = feature.Children.OfType<Background>().SelectMany(x => x.Steps).ToList();
 
-            foreach (var scenario in feature.Children.OfType<Scenario>())
+            var backgroundSteps = GetBackgroundSteps(feature);
+
+            foreach (var scenario in feature.Children.OfType<Scenario>().Where(x => !x.Examples.Any()))
             {
-                if (!scenario.Examples.Any())
+                yield return new TestCase()
                 {
-                    yield return new TestCase()
-                    {
-                        DisplayName = scenario.Name,
-                        FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
-                        ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
-                        Source = source,
-                        LocalExtensionData = new TestExecutionContext(feature, scenario, null, backgroundSteps)
-                    };
-                }
+                    DisplayName = scenario.Name,
+                    FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
+                    ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
+                    Source = source,
+                    LocalExtensionData = new TestExecutionContext(feature, scenario, null, backgroundSteps)
+                };
+            }
 
-                var caseNumber = 1;
+            foreach (var scenario in feature.Children.OfType<Scenario>().Where(x => x.Examples.Any()))
+            {
+                var scenarioCaseNumber = 1;
+
                 foreach (var example in scenario.Examples)
                 {
                     foreach (var body in example.TableBody)
                     {
-                        var testName = $"{scenario.Name}: Example #{caseNumber++}";
+                        var testName = $"{scenario.Name}: Example #{scenarioCaseNumber++}";
 
                         yield return new TestCase()
                         {
@@ -152,5 +154,16 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
         {
             throw new Exception($"Unable to create startup class from {startupType.FullName}", exception);
         }
+    }
+
+    private static List<Step> GetBackgroundSteps(Feature feature)
+    {
+        var backgrounds = feature.Children.OfType<Background>().ToList();
+        if (backgrounds.Count > 1)
+        {
+            throw new Exception("Multiple backgrounds are not supported");
+        }
+
+        return backgrounds.SelectMany(x => x.Steps).ToList();
     }
 }
