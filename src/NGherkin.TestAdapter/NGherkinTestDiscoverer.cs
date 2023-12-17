@@ -91,14 +91,35 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
 
             foreach (var scenario in feature.Children.OfType<Scenario>())
             {
-                yield return new TestCase()
+                if (!scenario.Examples.Any())
                 {
-                    DisplayName = scenario.Name,
-                    FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
-                    ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
-                    Source = source,
-                    LocalExtensionData = new TestExecutionContext(feature, scenario)
-                };
+                    yield return new TestCase()
+                    {
+                        DisplayName = scenario.Name,
+                        FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
+                        ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
+                        Source = source,
+                        LocalExtensionData = new TestExecutionContext(feature, scenario, null)
+                    };
+                }
+
+                var caseNumber = 1;
+                foreach (var example in scenario.Examples)
+                {
+                    foreach (var body in example.TableBody)
+                    {
+                        var testName = $"{scenario.Name}: Example #{caseNumber++}";
+
+                        yield return new TestCase()
+                        {
+                            DisplayName = testName,
+                            FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{testName}",
+                            ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
+                            Source = source,
+                            LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body))
+                        };
+                    }
+                }
             }
         }
     }

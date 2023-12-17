@@ -45,6 +45,19 @@ internal sealed class StepClass
         await Task.Yield();
     }
 
+    [When("this is when step with with argument '(.*)' and value '(.*)'")]
+    public void When4(int number, string text)
+    {
+        if (number is not (1 or 2 or 3 or 4))
+        {
+            throw new ArgumentException(nameof(number));
+        }
+        if (text is not ("value1" or "value2" or "value3" or "value4"))
+        {
+            throw new ArgumentException(nameof(text));
+        }
+    }
+
     [Then("this is then step")]
     public void Then()
     {
