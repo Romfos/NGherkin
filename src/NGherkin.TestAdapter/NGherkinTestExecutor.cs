@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
-using NGherkin.Registrations;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -38,14 +37,14 @@ public sealed class NGherkinTestExecutor : ITestExecutor
                 }
 
                 using var serviceProvider = NGherkinTestDiscoverer.GetServiceProvider(startupType);
-                var gherkinStepRegistrations = serviceProvider.GetServices<GherkinStepRegistration>();
+                var gherkinStep = serviceProvider.GetServices<GherkinStep>();
 
                 foreach (var testCase in NGherkinTestDiscoverer.GetTestCases(source, serviceProvider))
                 {
                     if (testNames.Contains(testCase.FullyQualifiedName))
                     {
                         using var scopedServiceProvider = serviceProvider.CreateScope();
-                        RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStepRegistrations, testCase);
+                        RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStep, testCase);
                     }
                 }
             }
@@ -74,12 +73,12 @@ public sealed class NGherkinTestExecutor : ITestExecutor
                 }
 
                 using var serviceProvider = NGherkinTestDiscoverer.GetServiceProvider(startupType);
-                var gherkinStepRegistrations = serviceProvider.GetServices<GherkinStepRegistration>();
+                var gherkinStep = serviceProvider.GetServices<GherkinStep>();
 
                 foreach (var testCase in NGherkinTestDiscoverer.GetTestCases(source, serviceProvider))
                 {
                     using var scopedServiceProvider = serviceProvider.CreateScope();
-                    RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStepRegistrations, testCase);
+                    RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStep, testCase);
                 }
             }
             catch (Exception exception)
@@ -92,7 +91,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
     private void RunTest(
         IFrameworkHandle frameworkHandle,
         IServiceProvider serviceProvider,
-        IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
+        IEnumerable<GherkinStep> gherkinSteps,
         TestCase testCase)
     {
         frameworkHandle.RecordStart(testCase);
@@ -106,7 +105,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
 
         try
         {
-            var stepExecutionContexts = GetStepExecutionContexts(serviceProvider, gherkinStepRegistrations, testExecutionContext).ToList();
+            var stepExecutionContexts = GetStepExecutionContexts(serviceProvider, gherkinSteps, testExecutionContext).ToList();
 
             foreach (var stepExecutionContext in stepExecutionContexts)
             {
@@ -130,7 +129,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
 
     private IEnumerable<StepExecutionContext> GetStepExecutionContexts(
         IServiceProvider serviceProvider,
-        IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
+        IEnumerable<GherkinStep> gherkinSteps,
         TestExecutionContext testExecutionContext)
     {
         var backgroundStepKeyword = "Given";
@@ -138,7 +137,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         {
             backgroundStepKeyword = GetRealKeyword(step, backgroundStepKeyword);
             var stepText = step.Text;
-            yield return GetStepExecutionContext(serviceProvider, gherkinStepRegistrations, backgroundStepKeyword, stepText, step.Argument);
+            yield return GetStepExecutionContext(serviceProvider, gherkinSteps, backgroundStepKeyword, stepText, step.Argument);
         }
 
         var keyword = "Given";
@@ -146,38 +145,38 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         {
             keyword = GetRealKeyword(step, keyword);
             var stepText = GetRealStepText(step, testExecutionContext);
-            yield return GetStepExecutionContext(serviceProvider, gherkinStepRegistrations, keyword, stepText, step.Argument);
+            yield return GetStepExecutionContext(serviceProvider, gherkinSteps, keyword, stepText, step.Argument);
         }
     }
 
     private StepExecutionContext GetStepExecutionContext(
         IServiceProvider serviceProvider,
-        IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
+        IEnumerable<GherkinStep> gherkinSteps,
         string keyword,
         string stepText,
         StepArgument stepArgument)
     {
         var errorMessageStepText = $"{keyword} {stepText}";
 
-        var matchedGherkinStepRegistrations = gherkinStepRegistrations
+        var matchedGherkinSteps = gherkinSteps
             .Where(x => x.Keyword == keyword && x.Pattern.IsMatch(stepText))
             .ToList();
 
-        if (matchedGherkinStepRegistrations.Count == 0)
+        if (matchedGherkinSteps.Count == 0)
         {
             throw new Exception($"Unable to find step implementation for: {errorMessageStepText}");
         }
 
-        if (matchedGherkinStepRegistrations.Count > 1)
+        if (matchedGherkinSteps.Count > 1)
         {
             throw new Exception($"Multiple step implementations were found for: {errorMessageStepText}");
         }
 
-        var matchedGherkinStepRegistration = matchedGherkinStepRegistrations.Single();
+        var matchedGherkinStep = matchedGherkinSteps.Single();
 
-        var service = serviceProvider.GetRequiredService(matchedGherkinStepRegistration.ServiceType);
+        var service = serviceProvider.GetRequiredService(matchedGherkinStep.ServiceType);
 
-        var parameters = matchedGherkinStepRegistration.Pattern
+        var parameters = matchedGherkinStep.Pattern
             .Match(stepText)
             .Groups
             .Cast<Group>()
@@ -187,15 +186,15 @@ public sealed class NGherkinTestExecutor : ITestExecutor
 
         var expectedParametersCount = stepArgument != null ? parameters.Count + 1 : parameters.Count;
 
-        if (matchedGherkinStepRegistration.Method.GetParameters().Length != expectedParametersCount)
+        if (matchedGherkinStep.Method.GetParameters().Length != expectedParametersCount)
         {
-            throw new Exception($"Invalid parameter count for {matchedGherkinStepRegistration.ServiceType.FullName}.{matchedGherkinStepRegistration.Method}");
+            throw new Exception($"Invalid parameter count for {matchedGherkinStep.ServiceType.FullName}.{matchedGherkinStep.Method}");
         }
 
         var stepExecutionContext = new StepExecutionContext(
             errorMessageStepText,
             service,
-            matchedGherkinStepRegistration.Method,
+            matchedGherkinStep.Method,
             parameters,
             stepArgument);
 

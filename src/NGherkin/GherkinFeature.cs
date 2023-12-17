@@ -1,8 +1,8 @@
 using Gherkin.Ast;
 
-namespace NGherkin.Registrations;
+namespace NGherkin;
 
-public sealed class GherkinDocumentRegistration(
+public sealed class GherkinFeature(
     string name,
     GherkinDocument gherkinDocument)
 {

@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
-using NGherkin.Registrations;
 using System.ComponentModel;
 using System.Reflection;
 
@@ -85,9 +84,9 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
 
     internal static IEnumerable<TestCase> GetTestCases(string source, IServiceProvider serviceProvider)
     {
-        foreach (var gherkinDocumentRegistration in serviceProvider.GetServices<GherkinDocumentRegistration>())
+        foreach (var gherkinFeature in serviceProvider.GetServices<GherkinFeature>())
         {
-            var feature = gherkinDocumentRegistration.Document.Feature;
+            var feature = gherkinFeature.Document.Feature;
 
             var featureBackgroundSteps = GetFeatureBackgroundSteps(feature);
 
@@ -100,7 +99,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                     var testCase = new TestCase()
                     {
                         DisplayName = scenario.Name,
-                        FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{rule.Name}.{scenario.Name}",
+                        FullyQualifiedName = $"{gherkinFeature.Name}.{gherkinFeature.Document.Feature.Name}.{rule.Name}.{scenario.Name}",
                         ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                         Source = source,
                         LocalExtensionData = new TestExecutionContext(feature, scenario, null, ruleBackgroundSteps)
@@ -124,7 +123,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                             var testCase = new TestCase()
                             {
                                 DisplayName = testName,
-                                FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{rule.Name}.{testName}",
+                                FullyQualifiedName = $"{gherkinFeature.Name}.{gherkinFeature.Document.Feature.Name}.{rule.Name}.{testName}",
                                 ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                                 Source = source,
                                 LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body), ruleBackgroundSteps)
@@ -143,7 +142,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                 var testCase = new TestCase()
                 {
                     DisplayName = scenario.Name,
-                    FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
+                    FullyQualifiedName = $"{gherkinFeature.Name}.{gherkinFeature.Document.Feature.Name}.{scenario.Name}",
                     ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                     Source = source,
                     LocalExtensionData = new TestExecutionContext(feature, scenario, null, featureBackgroundSteps)
@@ -167,7 +166,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                         var testCase = new TestCase()
                         {
                             DisplayName = testName,
-                            FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{testName}",
+                            FullyQualifiedName = $"{gherkinFeature.Name}.{gherkinFeature.Document.Feature.Name}.{testName}",
                             ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                             Source = source,
                             LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body), featureBackgroundSteps)

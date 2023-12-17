@@ -1,9 +1,9 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace NGherkin.Registrations;
+namespace NGherkin;
 
-public sealed class GherkinStepRegistration(
+public sealed class GherkinStep(
     Type serviceType,
     MethodInfo method,
     string keyword,
