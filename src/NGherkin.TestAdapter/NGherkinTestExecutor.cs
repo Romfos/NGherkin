@@ -1,10 +1,9 @@
-using Gherkin.Ast;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 using NGherkin.Registrations;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace NGherkin.TestAdapter;
@@ -25,16 +24,34 @@ public sealed class NGherkinTestExecutor : ITestExecutor
             return;
         }
 
-        var testCasesList = tests.ToList();
+        var testNames = tests.Select(x => x.FullyQualifiedName).ToList();
 
-        var testCases = testCasesList
-            .Select(x => x.Source).Distinct()
-            .SelectMany(NGherkinTestDiscoverer.GetTestCases)
-            .Where(x => testCasesList.Any(y => x.FullyQualifiedName == y.FullyQualifiedName));
-
-        foreach (var testCase in testCases)
+        foreach (var source in tests.Select(x => x.Source).Distinct())
         {
-            RunTest(testCase, frameworkHandle);
+            try
+            {
+                var startupType = NGherkinTestDiscoverer.GetStartupType(source);
+                if (startupType == null)
+                {
+                    continue;
+                }
+
+                using var serviceProvider = NGherkinTestDiscoverer.GetServiceProvider(startupType);
+                var gherkinStepRegistrations = serviceProvider.GetServices<GherkinStepRegistration>();
+
+                foreach (var testCase in NGherkinTestDiscoverer.GetTestCases(source, serviceProvider))
+                {
+                    if (testNames.Contains(testCase.FullyQualifiedName))
+                    {
+                        using var scopedServiceProvider = serviceProvider.CreateScope();
+                        RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStepRegistrations, testCase);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Error, exception.ToString());
+            }
         }
     }
 
@@ -45,126 +62,153 @@ public sealed class NGherkinTestExecutor : ITestExecutor
             return;
         }
 
-        foreach (var test in sources.SelectMany(NGherkinTestDiscoverer.GetTestCases))
+        foreach (var source in sources)
         {
-            RunTest(test, frameworkHandle);
+            try
+            {
+                var startupType = NGherkinTestDiscoverer.GetStartupType(source);
+                if (startupType == null)
+                {
+                    continue;
+                }
+
+                using var serviceProvider = NGherkinTestDiscoverer.GetServiceProvider(startupType);
+                var gherkinStepRegistrations = serviceProvider.GetServices<GherkinStepRegistration>();
+
+                foreach (var testCase in NGherkinTestDiscoverer.GetTestCases(source, serviceProvider))
+                {
+                    using var scopedServiceProvider = serviceProvider.CreateScope();
+                    RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStepRegistrations, testCase);
+                }
+            }
+            catch (Exception exception)
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Error, exception.ToString());
+            }
         }
     }
 
-    private void RunTest(TestCase testCase, IFrameworkHandle frameworkHandle)
+    private void RunTest(
+        IFrameworkHandle frameworkHandle,
+        IServiceProvider serviceProvider,
+        IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
+        TestCase testCase)
     {
-        var startTime = DateTime.Now;
         frameworkHandle.RecordStart(testCase);
         var testResult = new TestResult(testCase);
+        testResult.StartTime = DateTime.Now;
 
-        if (testCase.LocalExtensionData is not TestCaseExecutionContext testCaseExecutionContext)
+        if (testCase.LocalExtensionData is not TestExecutionContext testExecutionContext)
         {
-            throw new Exception("Unable to get test case data");
+            throw new Exception($"Unable to get {nameof(TestExecutionContext)}");
         }
 
         try
         {
-            using var scope = testCaseExecutionContext.Services.CreateScope();
-            var gherkinStepRegistrations = scope.ServiceProvider.GetServices<GherkinStepRegistration>();
-
-            var stepExecutionContexts = testCaseExecutionContext.Scenario.Steps
-                .Select(step => GetStepExecutionContext(step, scope.ServiceProvider, gherkinStepRegistrations))
-                .ToList();
+            var stepExecutionContexts = GetStepExecutionContexts(serviceProvider, gherkinStepRegistrations, testExecutionContext).ToList();
 
             foreach (var stepExecutionContext in stepExecutionContexts)
             {
-                var result = stepExecutionContext.MethodInfo.Invoke(stepExecutionContext.Target, stepExecutionContext.Arguments);
-                AwaitIfRequired(result);
+                RunTestStep(stepExecutionContext);
             }
+
+            testResult.Outcome = TestOutcome.Passed;
         }
         catch (Exception exception)
         {
-            testResult.Outcome = TestOutcome.Failed;
-            testResult.EndTime = DateTime.Now;
-            testResult.Duration = testResult.EndTime - startTime;
             testResult.ErrorMessage = exception.ToString();
-            testResult.ErrorStackTrace = exception.StackTrace;
-            frameworkHandle.RecordResult(testResult);
-            frameworkHandle.RecordEnd(testResult.TestCase, testResult.Outcome);
-            return;
+            testResult.ErrorStackTrace = exception.InnerException?.StackTrace ?? exception.StackTrace;
+            testResult.Outcome = TestOutcome.Failed;
         }
 
-        testResult.Outcome = TestOutcome.Passed;
         testResult.EndTime = DateTime.Now;
-        testResult.Duration = testResult.EndTime - startTime;
+        testResult.Duration = testResult.EndTime - testResult.StartTime;
         frameworkHandle.RecordResult(testResult);
-        frameworkHandle.RecordEnd(testResult.TestCase, testResult.Outcome);
+        frameworkHandle.RecordEnd(testCase, testResult.Outcome);
     }
 
-    private void AwaitIfRequired(object? result)
+    private IEnumerable<StepExecutionContext> GetStepExecutionContexts(
+        IServiceProvider serviceProvider,
+        IEnumerable<GherkinStepRegistration> gherkinStepRegistrations,
+        TestExecutionContext testExecutionContext)
     {
-        if (result?.GetType().GetMethod(nameof(Task.GetAwaiter)) is MethodInfo getAwaiter)
+        foreach (var step in testExecutionContext.Scenario.Steps)
+        {
+            var keyword = step.Keyword.Trim();
+            var fullStepText = $"{keyword} {step.Text}";
+
+            var matchedGherkinStepRegistrations = gherkinStepRegistrations
+                .Where(x => x.Keyword == keyword && x.Pattern.IsMatch(step.Text))
+                .ToList();
+
+            if (matchedGherkinStepRegistrations.Count == 0)
+            {
+                throw new Exception($"Unable to find step implementation for: {fullStepText}");
+            }
+
+            if (matchedGherkinStepRegistrations.Count > 1)
+            {
+                throw new Exception($"Multiple step implementations were found for: {fullStepText}");
+            }
+
+            var matchedGherkinStepRegistration = matchedGherkinStepRegistrations.Single();
+
+            var service = serviceProvider.GetRequiredService(matchedGherkinStepRegistration.ServiceType);
+
+            var parameters = matchedGherkinStepRegistration.Pattern
+                .Match(step.Text)
+                .Groups
+                .Cast<Group>()
+                .Skip(1)
+                .Select(x => x.Value)
+                .ToList();
+
+            var expectedParameterLength = step.Argument != null ? parameters.Count + 1 : parameters.Count;
+
+            if (matchedGherkinStepRegistration.Method.GetParameters().Length != expectedParameterLength)
+            {
+                throw new Exception($"Invalid parameter count for {matchedGherkinStepRegistration.ServiceType.FullName}.{matchedGherkinStepRegistration.Method}");
+            }
+
+            yield return new StepExecutionContext(
+                fullStepText,
+                service,
+                matchedGherkinStepRegistration.Method,
+                parameters,
+                step.Argument);
+        }
+    }
+
+    private void RunTestStep(StepExecutionContext stepExecutionContext)
+    {
+        var arguments = ParseStepArguments(stepExecutionContext);
+
+        var result = stepExecutionContext.Method.Invoke(stepExecutionContext.Service, arguments);
+        if (result?.GetType().GetMethod("GetAwaiter") is MethodInfo getAwaiter)
         {
             var awaiter = getAwaiter.Invoke(result, null);
-            if (awaiter?.GetType().GetMethod(nameof(TaskAwaiter.GetResult)) is MethodInfo getResult)
+            if (awaiter?.GetType().GetMethod("GetResult") is MethodInfo getResult)
             {
                 getResult.Invoke(awaiter, null);
             }
         }
     }
 
-    private StepExecutionContext GetStepExecutionContext(
-        Step step,
-        IServiceProvider testScopedServiceProvider,
-        IEnumerable<GherkinStepRegistration> gherkinStepRegistrations)
+    private object[] ParseStepArguments(StepExecutionContext stepExecutionContext)
     {
-        var matchedGherkinStepRegistrations = gherkinStepRegistrations
-            .Where(x => x.Keyword == step.Keyword.Trim() && x.Pattern.IsMatch(step.Text))
-            .ToList();
-
-        if (matchedGherkinStepRegistrations.Count == 0)
-        {
-            throw new Exception($"Unable to find step for: {step.Keyword.Trim()} {step.Text}");
-        }
-
-        if (matchedGherkinStepRegistrations.Count > 1)
-        {
-            throw new Exception($"Multiple steps were found for: {step.Keyword.Trim()} {step.Text}");
-        }
-
-        var gherkinStepRegistration = matchedGherkinStepRegistrations.Single();
-        var target = testScopedServiceProvider.GetRequiredService(gherkinStepRegistration.Type);
-        var arguments = ParseStepArguments(gherkinStepRegistration, step);
-
-        return new StepExecutionContext(target, gherkinStepRegistration.Method, arguments);
-    }
-
-    private object[] ParseStepArguments(GherkinStepRegistration gherkinStepRegistration, Step step)
-    {
-        var stepTextArguments = gherkinStepRegistration.Pattern
-            .Match(step.Text)
-            .Groups
-            .Cast<Group>()
-            .Skip(1)
-            .Select(x => x.Value)
-            .ToList();
-
-        var parameters = gherkinStepRegistration.Method.GetParameters();
-
-        var expectedParameterCount = step.Argument == null ? stepTextArguments.Count : stepTextArguments.Count + 1;
-        if (expectedParameterCount != parameters.Length)
-        {
-            throw new Exception($"Method {gherkinStepRegistration.Type.FullName}.{gherkinStepRegistration.Method.Name} have invalid parameters count");
-        }
-
-        var arguments = stepTextArguments.Select((value, index) => Convert.ChangeType(value, parameters[index].ParameterType));
-        if (step.Argument is DataTable dataTable)
-        {
-            arguments = arguments.Concat([dataTable]);
-        }
-
         try
         {
+            var parameters = stepExecutionContext.Method.GetParameters();
+            var arguments = stepExecutionContext.Parameters.Select((value, index) => Convert.ChangeType(value, parameters[index].ParameterType));
+            if (stepExecutionContext.StepArgument != null)
+            {
+                arguments = arguments.Concat([stepExecutionContext.StepArgument]);
+            }
             return arguments.ToArray();
         }
         catch (Exception exception)
         {
-            throw new Exception($"Unable to parse arguments for step: {step.Keyword.Trim()} {step.Text}", exception);
+            throw new Exception($"Unable to parse arguments for step: {stepExecutionContext.FullStepText}", exception);
         }
     }
 }

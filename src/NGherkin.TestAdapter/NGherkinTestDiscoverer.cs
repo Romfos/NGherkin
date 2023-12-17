@@ -17,60 +17,118 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
 {
     public void DiscoverTests(IEnumerable<string> sources, IDiscoveryContext discoveryContext, IMessageLogger logger, ITestCaseDiscoverySink discoverySink)
     {
-        foreach (var testCase in sources.SelectMany(GetTestCases))
+        foreach (var source in sources)
         {
-            discoverySink.SendTestCase(testCase);
+            try
+            {
+                var startupType = GetStartupType(source);
+                if (startupType == null)
+                {
+                    continue;
+                }
+                using var serviceProvider = GetServiceProvider(startupType);
+
+                foreach (var testcase in GetTestCases(source, serviceProvider))
+                {
+                    discoverySink.SendTestCase(testcase);
+                }
+            }
+            catch (Exception exception)
+            {
+                logger.SendMessage(TestMessageLevel.Error, exception.ToString());
+            }
         }
     }
 
-    internal static IEnumerable<TestCase> GetTestCases(string source)
+    internal static Type? GetStartupType(string source)
     {
-        var assembly = Assembly.LoadFile(source);
-        var services = CreateServiceCollection(assembly).BuildServiceProvider();
+        var assembly = GetAssembly(source);
 
-        foreach (var gherkinDocumentRegistration in services.GetServices<GherkinDocumentRegistration>())
+        var startupTypes = assembly.GetTypes().Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(StartupBase))).ToList();
+
+        if (startupTypes.Count == 0)
         {
-            foreach (var scenario in gherkinDocumentRegistration.Document.Feature.Children.OfType<Scenario>())
+            return null;
+        }
+
+        if (startupTypes.Count > 1)
+        {
+            throw new Exception($"Multiple startup classes were found in {assembly.FullName} assembly");
+        }
+
+        return startupTypes.Single();
+    }
+
+    internal static ServiceProvider GetServiceProvider(Type startupType)
+    {
+        var serviceCollection = new ServiceCollection();
+        var startup = CreateStartupClass(startupType);
+
+        try
+        {
+            startup.Configure(serviceCollection);
+        }
+        catch (Exception exception)
+        {
+            throw new Exception($"Error during startup configuration {startupType.FullName}", exception);
+        }
+
+        try
+        {
+            return serviceCollection.BuildServiceProvider();
+        }
+        catch (Exception exception)
+        {
+            throw new Exception($"Unable to build container for {startupType.FullName}", exception);
+        }
+    }
+
+    internal static IEnumerable<TestCase> GetTestCases(string source, IServiceProvider serviceProvider)
+    {
+        foreach (var gherkinDocumentRegistration in serviceProvider.GetServices<GherkinDocumentRegistration>())
+        {
+            var feature = gherkinDocumentRegistration.Document.Feature;
+
+            foreach (var scenario in feature.Children.OfType<Scenario>())
             {
-                var testCase = new TestCase()
+                yield return new TestCase()
                 {
                     DisplayName = scenario.Name,
                     FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
                     ExecutorUri = new Uri(NGherkinTestExecutor.ExecutorUri),
                     Source = source,
-                    LocalExtensionData = new TestCaseExecutionContext(scenario, services),
+                    LocalExtensionData = new TestExecutionContext(feature, scenario)
                 };
-
-                yield return testCase;
             }
         }
     }
 
-    internal static ServiceCollection CreateServiceCollection(Assembly assembly)
+    private static Assembly GetAssembly(string source)
     {
-        var services = new ServiceCollection();
-
-        var startupTypes = assembly.GetTypes()
-           .Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(StartupBase)))
-           .ToList();
-
-        if (startupTypes.Count == 0)
+        try
         {
-            return services;
+            return Assembly.LoadFrom(source);
         }
-
-        if (startupTypes.Count > 1)
+        catch (Exception exception)
         {
-            throw new Exception("Multiple startup classes were declared");
+            throw new Exception($"Unable to load assembly from source {source}", exception);
         }
+    }
 
-        if (Activator.CreateInstance(startupTypes.Single()) is not StartupBase startup)
+    private static StartupBase CreateStartupClass(Type startupType)
+    {
+        try
         {
-            throw new Exception("Unable to create startup class");
+            if (Activator.CreateInstance(startupType) is not StartupBase startup)
+            {
+                throw new Exception($"Unable to create startup class from {startupType.FullName}");
+            }
+
+            return startup;
         }
-
-        startup.Configure(services);
-
-        return services;
+        catch (Exception exception)
+        {
+            throw new Exception($"Unable to create startup class from {startupType.FullName}", exception);
+        }
     }
 }
