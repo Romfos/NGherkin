@@ -93,7 +93,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
 
             foreach (var scenario in feature.Children.OfType<Scenario>().Where(x => !x.Examples.Any()))
             {
-                yield return new TestCase()
+                var testCase = new TestCase()
                 {
                     DisplayName = scenario.Name,
                     FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{scenario.Name}",
@@ -101,6 +101,10 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                     Source = source,
                     LocalExtensionData = new TestExecutionContext(feature, scenario, null, backgroundSteps)
                 };
+
+                testCase.Traits.AddRange(feature.Tags.Concat(scenario.Tags).Select(x => new Trait(x.Name, string.Empty)));
+
+                yield return testCase;
             }
 
             foreach (var scenario in feature.Children.OfType<Scenario>().Where(x => x.Examples.Any()))
@@ -113,7 +117,7 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                     {
                         var testName = $"{scenario.Name}: Example #{scenarioCaseNumber++}";
 
-                        yield return new TestCase()
+                        var testCase = new TestCase()
                         {
                             DisplayName = testName,
                             FullyQualifiedName = $"{gherkinDocumentRegistration.Name}.{gherkinDocumentRegistration.Document.Feature.Name}.{testName}",
@@ -121,6 +125,10 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
                             Source = source,
                             LocalExtensionData = new TestExecutionContext(feature, scenario, new(example.TableHeader, body), backgroundSteps)
                         };
+
+                        testCase.Traits.AddRange(feature.Tags.Concat(scenario.Tags).Select(x => new Trait(x.Name, string.Empty)));
+
+                        yield return testCase;
                     }
                 }
             }

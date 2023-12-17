@@ -1,9 +1,11 @@
+
+@feature-tag
 Feature: Feature1
 
 Background:
     Given this is given step from background
 
-@tag1
+@scenario-tag
 Scenario: this is scenario
 	Given this is given step
 	When this is when step with '1' argument an 'text' argument
