@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace NGherkin;
 
-public sealed class GherkinStep(
+internal sealed class GherkinStep(
     Type serviceType,
     MethodInfo method,
     string keyword,

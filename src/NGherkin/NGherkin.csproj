@@ -5,6 +5,10 @@
     <PackageReference Include="Gherkin" Version="27.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NGherkin.TestAdapter"/>
+  </ItemGroup>
   
   <ItemGroup>
     <None Include="../NGherkin.props" Pack="true" PackagePath="build" />

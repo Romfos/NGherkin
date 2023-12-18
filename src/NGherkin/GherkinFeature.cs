@@ -2,7 +2,7 @@ using Gherkin.Ast;
 
 namespace NGherkin;
 
-public sealed class GherkinFeature(
+internal sealed class GherkinFeature(
     string name,
     GherkinDocument gherkinDocument)
 {
