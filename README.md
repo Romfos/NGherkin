@@ -28,7 +28,7 @@ Modern Gherkin framework for .NET ecosystem for different types of tests
 - Visual Studio 2022 or Visual Studio Code or any other editor with .NET support
 
 Optional: gherking syntax plugin for your code editor:
-1) Specflow for Visual Studio 2022,
+1) Specflow plugin for Visual Studio 2022
 2) Cucumber for Visual Studio Code or any other plugin
 
 # How to use
