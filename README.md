@@ -1,6 +1,6 @@
 # Overview
 
-Modern Gherkin framework for .NET ecosystem for different types of tests
+Modern Gherkin-based BDD framework for .NET ecosystem
 
 [![.github/workflows/build.yml](https://github.com/Romfos/NGherkin/actions/workflows/build.yml/badge.svg)](https://github.com/Romfos/NGherkin/actions/workflows/build.yml)
 
