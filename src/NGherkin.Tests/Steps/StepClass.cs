@@ -55,6 +55,15 @@ internal sealed class StepClass
         await Task.Yield();
     }
 
+    [When("step with model transformation")]
+    public void When4(Dictionary<int, string> dictionary)
+    {
+        if (dictionary.Count != 2 || dictionary[1] != "One" || dictionary[2] != "Two")
+        {
+            throw new ArgumentException(nameof(dictionary));
+        }
+    }
+
     [When("this is when step with with argument '(.*)' and value '(.*)'")]
     public void When4(int number, string text)
     {

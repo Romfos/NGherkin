@@ -14,6 +14,10 @@ Scenario: this is scenario
     When this is second when step with date '01/01/2020' argument
         And this is when step with async task
 	Then this is then step
+    When step with model transformation
+    | Key | Value |
+    | 1   | One   |
+    | 2   | Two   |
 
 Scenario Outline: this is scenario outline
 	When this is when step with with argument '<number>' and value '<text>'

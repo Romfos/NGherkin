@@ -8,6 +8,20 @@ namespace NGherkin;
 
 public static class ServiceCollectionExtensions
 {
+    public static void AddArgumentTransformation<T>(this IServiceCollection services, Func<object, T?> converter)
+    {
+        ArgumentTransformation argumentTransformation = (object value, Type targetType) =>
+        {
+            if (targetType == typeof(T))
+            {
+                return converter(value);
+            }
+            return null;
+        };
+
+        services.AddSingleton(argumentTransformation);
+    }
+
     public static void AddGherkinFeatures(this IServiceCollection services)
     {
         var assembly = Assembly.GetCallingAssembly() ?? throw new Exception("Unable to get calling assembly");

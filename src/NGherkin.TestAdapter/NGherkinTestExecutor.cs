@@ -44,7 +44,8 @@ public sealed class NGherkinTestExecutor : ITestExecutor
                     if (testNames.Contains(testCase.FullyQualifiedName))
                     {
                         using var scopedServiceProvider = serviceProvider.CreateScope();
-                        RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStep, testCase);
+                        var argumentTransformations = scopedServiceProvider.ServiceProvider.GetServices<ArgumentTransformation>();
+                        RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStep, argumentTransformations, testCase);
                     }
                 }
             }
@@ -78,7 +79,8 @@ public sealed class NGherkinTestExecutor : ITestExecutor
                 foreach (var testCase in NGherkinTestDiscoverer.GetTestCases(source, serviceProvider))
                 {
                     using var scopedServiceProvider = serviceProvider.CreateScope();
-                    RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStep, testCase);
+                    var argumentTransformations = scopedServiceProvider.ServiceProvider.GetServices<ArgumentTransformation>();
+                    RunTest(frameworkHandle, scopedServiceProvider.ServiceProvider, gherkinStep, argumentTransformations, testCase);
                 }
             }
             catch (Exception exception)
@@ -92,6 +94,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         IFrameworkHandle frameworkHandle,
         IServiceProvider serviceProvider,
         IEnumerable<GherkinStep> gherkinSteps,
+        IEnumerable<ArgumentTransformation> argumentTransformations,
         TestCase testCase)
     {
         frameworkHandle.RecordStart(testCase);
@@ -109,7 +112,7 @@ public sealed class NGherkinTestExecutor : ITestExecutor
 
             foreach (var stepExecutionContext in stepExecutionContexts)
             {
-                RunTestStep(stepExecutionContext);
+                RunTestStep(stepExecutionContext, argumentTransformations);
             }
 
             testResult.Outcome = TestOutcome.Passed;
@@ -201,9 +204,9 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         return stepExecutionContext;
     }
 
-    private void RunTestStep(StepExecutionContext stepExecutionContext)
+    private void RunTestStep(StepExecutionContext stepExecutionContext, IEnumerable<ArgumentTransformation> argumentTransformations)
     {
-        var arguments = ParseStepArguments(stepExecutionContext);
+        var arguments = ParseStepArguments(stepExecutionContext, argumentTransformations);
 
         var result = stepExecutionContext.Method.Invoke(stepExecutionContext.Service, arguments);
         if (result?.GetType().GetMethod("GetAwaiter") is MethodInfo getAwaiter)
@@ -245,16 +248,29 @@ public sealed class NGherkinTestExecutor : ITestExecutor
         return stepText;
     }
 
-    private object[] ParseStepArguments(StepExecutionContext stepExecutionContext)
+    private object[] ParseStepArguments(StepExecutionContext stepExecutionContext, IEnumerable<ArgumentTransformation> argumentTransformations)
     {
         try
         {
             var parameters = stepExecutionContext.Method.GetParameters();
-            var arguments = stepExecutionContext.Parameters.Select((value, index) => Convert.ChangeType(value, parameters[index].ParameterType));
+            var arguments = stepExecutionContext.Parameters.Select((value, index) =>
+            {
+                var argumentValue = argumentTransformations
+                    .Select(argumentTransformation => argumentTransformation(value, parameters[index].ParameterType))
+                    .FirstOrDefault(x => x != null) ?? Convert.ChangeType(value, parameters[index].ParameterType);
+
+                return argumentValue;
+            });
+
             if (stepExecutionContext.StepArgument != null)
             {
-                arguments = arguments.Concat([stepExecutionContext.StepArgument]);
+                var argumentValue = argumentTransformations
+                    .Select(argumentTransformation => argumentTransformation(stepExecutionContext.StepArgument, parameters.Last().ParameterType))
+                    .FirstOrDefault(x => x != null) ?? stepExecutionContext.StepArgument;
+
+                arguments = arguments.Concat([argumentValue]);
             }
+
             return arguments.ToArray();
         }
         catch (Exception exception)
