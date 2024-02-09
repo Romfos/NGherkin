@@ -12,8 +12,8 @@ Modern Gherkin-based BDD framework for .NET ecosystem
 - Visual Studio 2022 or Visual Studio Code or any other editor with .NET support
 
 Optional: gherking syntax plugin for your code editor:
-1) Specflow plugin for Visual Studio 2022
-2) Cucumber for Visual Studio Code or any other plugin
+1) [Reqnroll plugin](https://marketplace.visualstudio.com/items?itemName=Reqnroll.ReqnrollForVisualStudio2022)  for Visual Studio 2022
+2) [Cucumber plugin](https://marketplace.visualstudio.com/items?itemName=CucumberOpen.cucumber-official) for Visual Studio Code or any other plugin
 
 # How to use
 1) Create new class library for .NET 6+ or .NET Framework 4.6.2+
