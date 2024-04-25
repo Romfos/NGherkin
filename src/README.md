@@ -2,10 +2,6 @@
 
 Modern Gherkin framework for .NET ecosystem for different types of tests
 
-Supported platforms:
-- .NET 6+
-- .NET Framework 4.6.2+
-
 # Example
 ```gherkin
 Feature: Guess the word

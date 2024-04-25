@@ -165,17 +165,15 @@ public sealed class NGherkinTestExecutor : ITestExecutor
             .Where(x => x.Keyword == keyword && x.Pattern.IsMatch(stepText))
             .ToList();
 
-        if (matchedGherkinSteps.Count == 0)
+        if (matchedGherkinSteps is [])
         {
             throw new Exception($"Unable to find step implementation for: {errorMessageStepText}");
         }
 
-        if (matchedGherkinSteps.Count > 1)
+        if (matchedGherkinSteps is not [var matchedGherkinStep])
         {
             throw new Exception($"Multiple step implementations were found for: {errorMessageStepText}");
         }
-
-        var matchedGherkinStep = matchedGherkinSteps.Single();
 
         var service = serviceProvider.GetRequiredService(matchedGherkinStep.ServiceType);
 

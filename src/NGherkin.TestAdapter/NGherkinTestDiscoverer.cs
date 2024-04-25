@@ -45,17 +45,17 @@ public sealed class NGherkinTestDiscoverer : ITestDiscoverer
 
         var startupTypes = assembly.GetTypes().Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(StartupBase))).ToList();
 
-        if (startupTypes.Count == 0)
+        if (startupTypes is [])
         {
             return null;
         }
 
-        if (startupTypes.Count > 1)
+        if (startupTypes is not [var startupType])
         {
             throw new Exception($"Multiple startup classes were found in {assembly.FullName} assembly");
         }
 
-        return startupTypes.Single();
+        return startupType;
     }
 
     internal static ServiceProvider GetServiceProvider(Type startupType)
