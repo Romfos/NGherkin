@@ -8,7 +8,7 @@ Modern Gherkin-based BDD framework for .NET ecosystem
 [![NGherkin.TestAdapter](https://img.shields.io/nuget/v/NGherkin.TestAdapter?label=NGherkin.TestAdapter)](https://www.nuget.org/packages/NGherkin.TestAdapter)
 
 # Requirements
-- NET 6+ (recommended) or .NET Framework 4.6.2+
+- NET 8+ (.NET 9 is recommended)
 - Visual Studio 2022 or Visual Studio Code or any other editor with .NET support
 
 Optional: gherking syntax plugin for your code editor:
@@ -16,7 +16,7 @@ Optional: gherking syntax plugin for your code editor:
 2) [Cucumber plugin](https://marketplace.visualstudio.com/items?itemName=CucumberOpen.cucumber-official) for Visual Studio Code or any other plugin
 
 # How to use
-1) Create new class library for .NET 6+ or .NET Framework 4.6.2+
+1) Create new class library for .NET 8+
 2) Add following nuget packages:
 - https://www.nuget.org/packages/NGherkin
 - https://www.nuget.org/packages/NGherkin.TestAdapter
