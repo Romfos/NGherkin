@@ -12,15 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            9.0.x
 
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Pack
-        run: dotnet pack -c Release -p:Version=${{ inputs.Version }} -o "./build" ./src/NGherkin.sln
+        run: dotnet pack -p:Version=${{ inputs.Version }} -o "./build" ./src/NGherkin.sln
 
       - name: Push to Nuget
         run: dotnet nuget push ./build/*.nupkg -k ${{ secrets.NUGET }} -s https://api.nuget.org/v3/index.json
