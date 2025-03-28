@@ -2,7 +2,7 @@
   <Import Project="../Package.props" />
 
   <ItemGroup>
-    <PackageReference Include="Gherkin" Version="32.0.0" />
+    <PackageReference Include="Gherkin" Version="32.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
 
